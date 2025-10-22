@@ -1,34 +1,38 @@
 name: Daily Repository Update
 
 on:
-  # Schedule the workflow to run once per day using cron syntax.
-  # This example is set to run at 04:30 AM UTC every day.
-  # Cron format: minute hour day_of_month month day_of_week (30 4 * * *)
+  # Schedule the workflow to run once per day at 04:30 AM UTC
   schedule:
     - cron: '30 4 * * *' 
     
-  # Allows manual triggering from the Actions tab for immediate testing
+  # Allows manual triggering from the Actions tab
   workflow_dispatch:
 
 jobs:
   commit_daily_update:
     runs-on: ubuntu-latest
     
+    # CRITICAL FIX: Explicitly grant permission to write to the repository
+    permissions:
+      contents: write
+      
     steps:
       - name: Checkout repository contents
-        # Uses the official action to get your repository's code
         uses: actions/checkout@v4
 
-      # Step to fulfill the requirement of including the specific email in its name
+      # NEW STEP: Create/Update a file with a timestamp to guarantee a change
+      - name: Force file change with timestamp
+        run: |
+          DATE=$(date +%Y-%m-%d\ %H:%M:%S)
+          echo "Last automated update: $DATE" > LAST_DAILY_UPDATE.txt
+          
+      # REQUIRED STEP: Includes your specific email in the step name
       - name: Daily update by 24f3002352@ds.study.iitm.ac.in
-        # CORRECTED ACTION: Using the standard and correct auto-commit action
+        # CORRECTED ACTION: Using the standard auto-commit action
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          # A temporary file is created to ensure there is always a change to commit
-          commit_file: 'LAST_DAILY_UPDATE.txt'
+          # We don't need commit_file now, as the previous step made the change
           commit_message: '🤖 Automated daily repository heartbeat update'
-          # GITHUB_TOKEN is the secret provided automatically by GitHub
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Set the committer and author details for clarity
           commit_user_name: DevSync Automated Bot
           commit_user_email: bot@devsync.solutions
